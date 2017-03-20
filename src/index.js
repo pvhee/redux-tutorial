@@ -1,105 +1,101 @@
-import React from 'react';
+import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-// import App from './App';
-import { createStore } from 'redux';
+// import TodoApp from './TodoApp';
 import './index.css';
 import expect, { createSpy, spyOn, isSpy } from 'expect';
+import { createStore, combineReducers } from 'redux';
 import deepFreeze from 'deep-freeze';
+
+const todo = (state, action) => {
+  switch (action.type) {
+    case 'ADD_TODO':
+      return {
+        id: action.id,
+        text: action.text,
+        completed: false
+      };
+    case 'TOGGLE_TODO':
+      if (state.id == action.id) {
+        return Object.assign({}, state, {
+          completed: !state.completed
+        });
+      } else {
+        return state;
+      };
+    default:
+      return state;
+  }
+}
 
 const todos = (state = [], action) => {
   switch (action.type) {
     case 'ADD_TODO':
       return [
         ... state,
-        {
-          id: action.id,
-          text: action.text,
-          completed: false
-        }
+        todo(undefined, action)
       ];
     case 'TOGGLE_TODO':
-      return state.map(todo => {
-        if (todo.id == action.id) {
-          return Object.assign({}, todo, {
-            completed: !todo.completed
-          });
-        } else {
-          return todo;
-        }
-      });
+      return state.map(t =>
+        todo(t, action)
+      );
     default:
       return state;
   }
 };
 
-const testAddTodo = () => {
-  const stateBefore = [];
-  const action = {
-    type: 'ADD_TODO',
-    id: 0,
-    text: 'Learn Redux'
-  };
-  const stateAfter = [
-    {
-      id: 0,
-      text: 'Learn Redux',
-      completed: false
-    }
-  ];
-
-  deepFreeze(stateBefore);
-  deepFreeze(action);
-
-  expect(
-    todos(stateBefore, action)
-  ).toEqual(stateAfter);
+const visibilityFilter = (state = 'SHOW_ALL', action) => {
+  switch (action.type) {
+    case 'SET_VISIBILITY_FILTER':
+      return action.filter;
+    default:
+      return state;
+  }
 }
 
-const testToggleTodo = () => {
-  const stateBefore = [
-    {
-      id: 0,
-      text: 'Learn Redux',
-      completed: false
-    },
-    {
-      id: 1,
-      text: 'Go shopping',
-      completed: false
-    }
-  ];
-  const action = {
-    type: 'TOGGLE_TODO',
-    id: 0,
-  };
-  const stateAfter = [
-    {
-      id: 0,
-      text: 'Learn Redux',
-      completed: true
-    },
-    {
-      id: 1,
-      text: 'Go shopping',
-      completed: false
-    }
-  ];
+const todoApp = combineReducers({
+  todos,
+  visibilityFilter
+});
 
-  deepFreeze(stateBefore);
-  deepFreeze(action);
+const store = createStore(todoApp);
 
-  expect(
-    todos(stateBefore, action)
-  ).toEqual(stateAfter);
-
-
+let nextTodoId = 0;
+class TodoApp extends Component {
+  render() {
+    return (
+      <div>
+        <button onClick={() => {
+          store.dispatch({
+            type: 'ADD_TODO',
+            text: 'New todo item',
+            id: nextTodoId++
+          })
+        }}>
+        add a new todo
+        </button>
+        <ul>
+          {this.props.todos.map(todo =>
+            <li key={todo.id}>
+              {todo.text}
+            </li>
+          )}
+        </ul>
+      </div>
+    );
+  }
 }
 
+const render = () => {
+  ReactDOM.render(
+    <TodoApp
+      todos={store.getState().todos}
+    />,
+    document.getElementById('root')
+  );
+};
 
-testAddTodo();
-testToggleTodo();
-console.log('all tests passed!');
-
+store.subscribe(render);
+render();
 
 
 // const counter = (state = 0, action) => {
@@ -128,24 +124,7 @@ console.log('all tests passed!');
 
 // const store = createStore(counter);
 
-// const render = () => {
-// 	ReactDOM.render(
-// 	  <Counter
-// 	  	value={store.getState()}
-// 	  	onIncrement={() =>
-// 	  		store.dispatch({
-// 	  			type: 'INCREMENT'
-// 	  		})
-// 	  	}
-// 	  	onDecrement={() =>
-// 	  		store.dispatch({
-// 	  			type: 'DECREMENT'
-// 	  		})
-// 	  	}
-// 	  />,
-// 	  document.getElementById('root')
-// 	);
-// };
+
 
 // store.subscribe(render);
 // render();
