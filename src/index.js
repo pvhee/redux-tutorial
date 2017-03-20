@@ -64,12 +64,16 @@ class TodoApp extends Component {
   render() {
     return (
       <div>
+        <input ref={(input) => {
+          this.input = input;
+        }}/>
         <button onClick={() => {
           store.dispatch({
             type: 'ADD_TODO',
-            text: 'New todo item',
+            text: this.input.value,
             id: nextTodoId++
-          })
+          });
+          this.input.value = '';
         }}>
         add a new todo
         </button>
